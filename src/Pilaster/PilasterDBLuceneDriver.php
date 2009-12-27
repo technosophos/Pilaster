@@ -20,7 +20,7 @@
  * @author mbutcher
  * @since 2.0
  */
-class PilasterLuceneDBDriver implements PilasterDB {
+class PilasterDBLuceneDriver implements PilasterDB {
   
   /**
    * The database (from the driver).
@@ -29,7 +29,7 @@ class PilasterLuceneDBDriver implements PilasterDB {
   protected $db = NULL;
   
   public function __construct($dbName, $path = '') {
-    $this->db = new PilasterDriver($dbName, $path);
+    $this->db = new PilasterLuceneDriver($dbName, $path);
   }
   
   /**

@@ -19,6 +19,12 @@ Copyright (c) 2009, Matt Butcher, some rights reserved.
   <property name="docsdir" value="./docs"/>
   <property name="packagedir" value="./dist"/>
 
+  <!--
+  ===========================================================
+  FILE SETS
+  ===========================================================
+  -->
+
   <!-- Files that must be included in the release -->
   <fileset id="licensefiles" dir=".">
     <include name="README"/>
@@ -29,6 +35,17 @@ Copyright (c) 2009, Matt Butcher, some rights reserved.
   <fileset id="sourcecode" dir="${srcdir}">
     <include name="**/*" />
   </fileset>
+  
+  <!-- Unit tests and auxilliary files -->
+  <fileset id="unittests" dir="${testdir}/Tests">
+    <include name="**/*Test.php" />
+  </fileset>
+  
+  <!--
+  ===========================================================
+  TARGETS
+  ===========================================================
+  -->
 
   <!-- Main Target -->
   <target name="main" description="main target">

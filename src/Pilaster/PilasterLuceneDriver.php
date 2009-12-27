@@ -1,4 +1,8 @@
 <?php
+/**
+ * Pilaster driver for Lucene backend.
+ */
+
 
 /**
  * Provides a Lucene-based driver for Pilaster.
@@ -108,7 +112,7 @@ class PilasterLuceneDriver {
     function countDocuments() {
         // We use this instead of $this->repo->count() because
         // we don't want deleted documents to be counted.
-        return count($this->repo->getAllLuceneDocIDs());
+        return count($this->getAllLuceneDocIDs());
     }
     
     /**
@@ -125,7 +129,7 @@ class PilasterLuceneDriver {
      */
     function insert($document) {
         $ldoc = LuceneDocumentConverter::pilasterToLucene($document);
-        $this->repo->addDocument($document);
+        $this->repo->addDocument($ldoc);
         $this->repo->commit();
     }
     
