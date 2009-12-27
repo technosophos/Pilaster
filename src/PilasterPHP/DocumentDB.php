@@ -38,256 +38,15 @@
  * @license GPL 3
  */
 
-//if(defined(ZEND_FRAMEWORK_PATH))
-//  require_once ZEND_FRAMEWORK_PATH.'/Zend/Search/Lucene.php';
-//else
-  require_once "Zend/Search/Lucene.php";
-
-  
-
+/**
+ * The Lucene implementation.
+ */
+require_once "Zend/Search/Lucene.php";
+/**
+ * The core document object.
+ */
 require_once "PilasterPHP/PilasterDocument.php";
     
-/**
- * AbstractDB is a generic document database.
- * 
- * <b>THIS IS PROVIDED FOR LEGACY APPS ONLY.</b> Use DocumentDB whenever possible.
- * 
- * The purpose of AbstractDB is to provide a generic controller for access
- * to a document database. The document database stores documents,
- * together with metadata and extensions, in a way that makes lookup
- * based on arbitrary metadata quick and efficient.
- * 
- * This new version (modified heavily since Sinciput 1.5) now provides
- * additional search support, and will run on any PHP platform that supports
- * the Zend Framework.
- * 
- * <b>Drivers</b>
- * This first version of PilasterPHP uses a single driver -- the Lucene driver --
- * to provide a database backend. Future versions should facilitate different
- * drivers, like -- perhaps -- BDB or Xapian driver.
- * 
- * @package Pilaster
- * @subpackage DB
- */
-class AbstractDB extends DocumentDb {
-    var $errText;
-
-    /*
-     * Original docs:
-     * Constructor. Note that an AbstractDB is fairly lightweight to construct.
-     * It does not establish any connections until necessary. So there is no
-     * harm in having multiple AbstractDB instances.
-     *
-     * Thread safety issues are dealt with in all recent versions of the DBA
-     * functions. AbstractDB uses the thread safety controls in the 
-     * BDBFunctions class.
-     * 
-     */
-    /**
-     * Create a new AbstractDB.
-     * 
-     * This opens a connection to the repository and prepares it for queries.
-     * 
-     * 
-     * @param string $repository Name of the repository.
-     * @param string $base_path Path where repository is located on disk.
-     */
-    function __construct($repository, $base_path = './') {
-        $this->errText = "";
-        
-        parent::__construct($repository, $base_path);
-    }
-
-    /**
-     * Add a metadata type.
-     * 
-     * <b>The current version does nothing!</b> Earlier versions created 
-     * physical files that backed indexes. But since Lucene is the current 
-     * indexing engine and it creates types on the fly, this string is unnecessary.
-     * 
-     * Also, since Lucene sees all data as strings, $datatype has no relevance
-     * for Lucene.
-     * 
-     * It is possible that in future versions, this may actually do something
-     * again. We just have to experiment with some other drivers to see.
-     * 
-     * <b>Old Docs:</b>
-     * A metadatum is composed of two parts: a type and a value. The
-     * type defines what sort of thing we might expect the value to 
-     * describe. Examples: title, author, creation date.
-     * 
-     * @param string $element name for a name/value pair
-     * @param string $datatype (optional, default string) type of 
-     *   data stored in the value
-     * @param string $db_filename (DEPRECATED/UNUSED) - name of the database
-     * file in the filesystem. Normally there is no reason to set this.
-     * returns true if successful, false otherwise.
-     */
-    function addMetadataType($element, $datatype = 'string', $db_filename='') {
-        
-        // Lucene doesn't require this. It can handle on-the-fly
-        // declarations. What should we do?
-        
-        return true;
-    }
-    
-    
-    /**
-     * Return an Index File Name
-     * 
-     * This was used in previous versions of AbstractDB when higher-level
-     * functions needed to know where a DB was. Since index files are now
-     * all merged into a single index, there is no longer a need for this.
-     *
-     * @param $element - name of element
-     * @returns This now returns an empty string.
-     * @deprecated This always returns an empty string.
-     */
-    function getMetadataTypeDB($element) {
-        throw new AbstractDBException("Deprecated method called: getMetadataTypeDB. It is dangerous to use this method.");
-        return '';
-    }
-    
-    /**
-     * Store a metadatum in the repository.
-     * 
-     * This will throw an exception because it is dangerous to use.
-     * 
-     * @deprecated Metadata must be stored as part of a document.
-     * @param string $element - the element type. Must exist in the registry
-     * @param string $document_id - Usually the document name. Must be unique.
-     * @param string $value - The value of the element
-     * @param boolean $append (optional) - If append is set to true, then if 
-     * the key 
-     * exists, the value will be appended to the existing value -- on other
-     * words, it will allow multiple values to be set for one key.
-     */
-    function addMetadata($element, $document_id, $value, $append = false) {
-        
-        throw new AbstractDBException("Deprecated addMetadata() method called. ".
-         "Since this method is no longer supported and data loss will result, you must fix this.");
-    }
-    
-    
-    /**
-     * Returns the datatype of the particular element.
-     * 
-     * Currently, it always returns 'string', since to Lucene everything is a
-     * string.
-     * 
-     * @param string $element - name of element
-     * @return the datatype (default is string)
-     */
-    function getMetadataDatatype($element) {
-        return 'string';
-    }
-    
-    
-    /**
-     * Remove a metadata type from the repository.
-     * 
-     * This is provided for backward compatibility. But since metadata is no
-     * longer maintained in separate index files, this is no longer necessary.
-     * 
-     * @param string $element Metadata type name to remove from database.
-     * @deprecated This doesn't do anything
-     */
-    function deleteMetadataType($element) {
-        return;
-    }
-    
-    
-    /**
-     * Update metadata.
-     * 
-     * This will throw an exception because it is no longer supported and is dangerous to use.
-     * 
-     * @deprecated DO NOT USE THIS.
-     * @param <type> $element
-     * @param <type> $document_id
-     * @param <type> $value
-     * @return <type>
-     */
-    function updateMetadata($element, $document_id, $value) {
-        $this->addMetadata($element, $document_id, $value, true);
-    }
-
-    /**
-     * This does nothing.
-     * 
-     * At one point, metadata was maintained in a different index than the document itself.
-     * Now all are stored together. Deleting the document deletes the metadata.
-     * 
-     * This is no longer necessary.
-     * 
-     * @deprecated This does nothing.
-     * 
-     * @param string $element
-     * @param string $document_id
-     */
-    function deleteMetadataByDocumentID($element, $document_id) {
-        return;
-    }
-    
-    
-
-    /**
-     * This does nothing.
-     * Since data is no longer stored in separate index files, deleting a document 
-     * will delete metadata. Otherwise, there is no way to delete just a metadatum 
-     * from the index.
-     * @deprecated Blah.
-     * @param string $element
-     * @param string $value
-     */
-    function deleteMetadataByValue($element, $value) {
-        return;
-    }
-    
-        /*
-     * DOES NOTHING.
-     * 
-     * This is retained for backward compatibility.
-     * @returns int Always returns 0.
-     * @deprecated
-     */
-    function purgeDocumentReferences($docID) {
-        return 0;
-    }
-    
-    /**
-     * Currently doesn't do anything.
-     * @deprecated This is provided for backward compatibility only. All real
-     * cleanup is done by the destructor.
-     */
-    function destroy() {
-        return true;
-    }
-
-    
-    /**
-     * Simple exception emulation. Often used in class functions like this:
-     * <code>return $this->_exception('An error occured...');</code>
-     * @param istring $msg - error message
-     * @access private
-     * @returns boolean false (always)
-     */
-    function _exception($msg) {
-        $this->errText = $msg;
-        return false;
-    }
-
-    /**
-     * @returns error string
-     */
-    function getErrText() {
-        // This is a hack...
-        if($this->errText == "") $this->errText = $this->bdbf->getErrText();
-        return $this->errText;
-    }
-    
-}
-
 /**
  * DocumentDB is a generic document database.
  * 
@@ -318,19 +77,36 @@ class AbstractDB extends DocumentDb {
  */
 class DocumentDB {
     
-    var $driver;
+    /**
+     * The driver implementation.
+     * @var
+     */
+    protected $driver;
 
     /**
      * Create a new repository and return a DocumentDB object.
-     * @param string $repositoryName The name of the repository.
-     * @param string $basePath The path to the repository.
-     * @return DocumentDB The new document database.
+     * @param string $repositoryName 
+     *  The name of the repository.
+     * @param string $basePath
+     *  The path to the repository.
+     * @return DocumentDB 
+     *  The new document database.
      */
     static function createDocumentDB($repositoryName, $basePath = './') {
         DocumentDBLuceneDriver::createRepository($repositoryName, $basePath);
         return new DocmentDB($repository, $basePath);
     }
     
+    /**
+     * Check to see if the given repository exists.
+     *
+     * @param string $repositoryName
+     *  The name of the repository.
+     * @param string $basePath
+     *  The path to the repository.
+     * @return boolean
+     *  TRUE if the repository exists, false otherwise.
+     */
     static function hasDocumentDB($repositoryName, $basePath = './') {
         return DocumentDBLuceneDriver::hasDocumentDB($repositoryName, $basePath);
     }
@@ -341,8 +117,10 @@ class DocumentDB {
      * This opens a connection to the repository and prepares it for queries.
      * 
      * 
-     * @param string $repository Name of the repository.
-     * @param string $base_path Path where repository is located on disk.
+     * @param string $repository 
+     *   Name of the repository.
+     * @param string $base_path
+     *   Path where repository is located on disk.
      */
     function __construct($repository, $base_path = './') {
         $this->driver = new DocumentDBLuceneDriver($repository, $base_path);
@@ -353,8 +131,10 @@ class DocumentDB {
      * type is known, then when a piece of metadata of that type is digested,
      * then it will be added to the metadata index files.
      *
-     * @param string $element name of metadata.
-     * @returns boolean true if the given $element is a metadata type.
+     * @param string $element
+     *   The name of metadatum.
+     * @return boolean 
+     * TRUE if the given $element is a metadata type.
      */
     function isMetadataType($element) {
         $a = $this->getMetadataTypes();
@@ -365,10 +145,11 @@ class DocumentDB {
     }
 
 
-    /*
+    /**
      * Gets an array of metadata types.
      * 
-     * @return array Array of string metadata types.
+     * @return array 
+     *   Array of string metadata types.
      */
     function getMetadataTypes() {
         return $this->driver->getMetadataNames();
@@ -503,8 +284,10 @@ class DocumentDB {
     }
 
 
-    /*
-     * Writes all of teh XML files in the document repository into the
+    /**
+     * Export all documents.
+     * 
+     * Writes all of the XML files in the document repository into the
      * specified dir (or if none is specified, into the export dir set in
      * the settings.php file). If $createDir is true (default) it will 
      * create a subdirectory (using a timestamp) and then write the files
@@ -670,11 +453,11 @@ class AbstractDBException extends Exception {
  */
 class DocumentDBLuceneDriver {
     
-    const driver_version = "Zen Search (Lucene) Driver, v. 1.0";
-    var $repoName = null;
-    var $basePath = null;
-    var $db_params = array();
-    var $repo = null;
+    const driver_version = "Zend Search (Lucene) Driver, v. 1.0";
+    protected $repoName = null;
+    protected $basePath = null;
+    protected $db_params = array();
+    protected $repo = null;
     
     /**
      * Create a new repository.
@@ -751,7 +534,7 @@ class DocumentDBLuceneDriver {
     function countDocuments() {
         // We use this instead of $this->repo-<count() because
         // we don't want deleted documents to be counted.
-        return count($this->repo->getAllLuceneDocIDs);
+        return count($this->repo->getAllLuceneDocIDs());
     }
     
     /**
@@ -1074,7 +857,7 @@ class DocumentDBLuceneDriver {
         // (see com.technosophos.rhizome.repository.lucene.LuceneSearcher)
         // But the Zend API is smaller than the Lucene API, so we have 
         // used "higher level" API calls, and skipped the lazy loading,
-        // which Zen either does not support, or supports quietly.
+        // which Zend either does not support, or supports quietly.
         
         $docs = $this->getAllLuceneDocIDs();
         //echo "Got all Lucene doc IDs: " . count($docs);

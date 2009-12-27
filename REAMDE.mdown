@@ -1,0 +1,21 @@
+= A Simple Document Database =
+
+Pilaster is a simple document database written in pure PHP.
+
+== History ==
+
+Pilaster was begun in 2004 as part of the Sinciput project. Initially, it was based on the BerkeleyDB database. While BDB provided an excellent data storage layer, PHP support for BDB was spotty at best. The bindings were not particularly good, and as an optional package, it was rarely compiled on hosted PHP platforms.
+
+In 2006 I began Rhizome, a pure Java document database. That, in turn, was based on Sinciput's document database. Instead of using BDB, though, it used Lucene (along with other tools). While I was very happy with the performance I could attain, the scarcity of hosting providers that provide servlet engines sent me back to the drawing board.
+
+In June of 2008 I began testing the Zend implementation of Lucene, and wrote a simple port of Rhizome to PHP, calling the project Pilaster (http://sinciput.etl.luc.edu/2008/06/lucene-in-php.html). It worked quite well, but life interrupted. At the end of 2009 I begin working on Pilaster again, inspired to make a lightweight PHP document database. The rationale behind my revived interest is simple: too few ISPs are offering real document database support (e.g. CouchDB or MongoDB) on their hosted platforms. A pure PHP tool can fill a niche for small websites.
+
+== Notes ==
+
+This package uses the Lucene bundle found here:
+
+http://sourceforge.net/projects/luceneapi/
+
+We use only lib/Zend from that distribution, and we have modified Lucene.php to use standard require_once statements (they are faster, it seems).
+
+Since Zend is licensed under a non-restrictive license, it has been included in the current source.
