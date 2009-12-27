@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<project name="Pilaster" 
+  description="A pure PHP document database"
+  basedir="." 
+  default="main"
+>
+<!--
+This is the Phing build file for QueryPath.
+
+Phing is a build tool. Learn more about it at http://phing.info.
+
+Copyright (c) 2009, Matt Butcher, some rights reserved.
+-->
+
+  <!-- Global properties -->
+  <property name="srcdir" value="./src"/>
+  <property name="testdir" value="./test"/>
+  <property name="builddir" value="./bin/build"/>
+  <property name="docsdir" value="./docs"/>
+  <property name="packagedir" value="./dist"/>
+
+  <!-- Files that must be included in the release -->
+  <fileset id="licensefiles" dir=".">
+    <include name="README"/>
+    <include name="INSTALL"/>
+  </fileset>
+
+  <!-- Files to be treated as source code -->
+  <fileset id="sourcecode" dir="${srcdir}">
+    <include name="**/*" />
+  </fileset>
+
+  <!-- Main Target -->
+  <target name="main" description="main target">
+      <copy todir="">
+          <fileset refid="srcdir" />
+      </copy>
+  </target>
+  
+  <!-- Validate -->
+  <target name="ftest" description="Fast test">
+    <phplint>
+      <fileset refid="sourcecode" />
+    </phplint>
+  </target>
+  
+  <!-- Run PHPUnit tests -->
+  <target name="tmtest" description="Run test, optimized for TextMate output.">
+    
+    <phpunit>
+      <formatter todir="test/reports" type="xml" usefile="yes"/>
+      <batchtest>
+        <fileset refid="unittests"/>
+      </batchtest>
+    </phpunit>
+     <phpunitreport 
+        infile="test/reports/testsuites.xml" 
+        format="noframes" 
+        todir="test/reports/html" 
+        />
+    <delete file="./test/db/qpTest.db" />
+    <delete file="./test/db/qpTest2.db" />
+  </target>
+</project>

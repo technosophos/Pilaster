@@ -532,7 +532,7 @@ class DocumentDBLuceneDriver {
     }
     
     function countDocuments() {
-        // We use this instead of $this->repo-<count() because
+        // We use this instead of $this->repo->count() because
         // we don't want deleted documents to be counted.
         return count($this->repo->getAllLuceneDocIDs());
     }
