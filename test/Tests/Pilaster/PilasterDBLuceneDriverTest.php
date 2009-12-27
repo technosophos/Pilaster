@@ -38,6 +38,7 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
   }
   
   public function testCount() {
+    
     $db = Pilaster::selectDB(DB_NAME, DB_PATH);
     
     $this->assertEquals(0, $db->count(), 'No documents to begin.');
@@ -46,10 +47,12 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals(1, $db->count(), 'One total document.');
     
     $q = array('id' => self::DOCID);
+    throw new Exception($db->count($q));
     $this->assertEquals(1, $db->count($q), 'One document with ID ' . self::DOCID);
     
     $q = array('id' => 'foo');
     $this->assertEquals(0, $db->count($q), 'No documents with ID foo');
+    
   }
   
   public function testFind() {
@@ -73,11 +76,13 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
   }
   
   public function tearDown() {
-    $files = array('read.lock.file', 'segments.gen', 'segments_1', 'write.lock.file');
-    
     $path = DB_PATH . DIRECTORY_SEPARATOR . DB_NAME;
     if (is_dir($path)) {
-      foreach($files as $file) unlink($path . DIRECTORY_SEPARATOR . $file);
+      $files = scandir($path);
+      foreach($files as $file) {
+        $filename = $path . DIRECTORY_SEPARATOR . $file;
+        if (is_file($filename)) unlink($filename);
+      };
       rmdir($path);
     }
     
