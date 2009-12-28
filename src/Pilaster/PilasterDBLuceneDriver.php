@@ -53,7 +53,8 @@ class PilasterDBLuceneDriver implements PilasterDB {
   public function find($query = NULL, $fields = NULL) {
     if (is_string($query)) {
       // Process this as a search query:
-      throw new Exception("Not implemented.");
+      //throw new Exception("Not implemented.");
+      return $this->db->search($query);
     }
     elseif (is_array($query)) {
       return $this->db->narrowingSearch($query);

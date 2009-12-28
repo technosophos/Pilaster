@@ -31,7 +31,7 @@
 class PilasterLuceneDriver {
     
     const driver_version = "Zend Search (Lucene) Driver, v. 2.0";
-    const doc_id = '__docid';
+    const doc_id = 'id';
     protected $repoName = null;
     protected $basePath = null;
     protected $db_params = array();
@@ -407,7 +407,12 @@ class PilasterLuceneDriver {
      * @return array Array of Hit objects.
      */
     function search($query) {
-        $results = $this->repo->find($query);
+        $hits = $this->repo->find($query);
+        $results = array();
+        
+        foreach ($hits as $hit) {
+          $results[] = LuceneDocumentConverter::luceneToPilaster($hit->getDocument());
+        }
         
         // What should this return? The docs state that it find() returns a 
         // Zend_Search_Lucene_QueryHit object, but this class is undocumented.
@@ -435,6 +440,21 @@ class PilasterLuceneDriver {
       
         
         if(empty($narrower) || !is_array($narrower)) return false; // short-circuit if narrower is empty.
+        
+        $docsFilter = new Zend_Search_Lucene_Index_DocsFilter();
+        foreach ($narrower as $termId => $termValue) {
+          $term = new Zend_Search_Lucene_Index_Term($termValue, $termId);
+          //$term = new Zend_Search_Lucene_Search_QueryEntry_Term('Test', 'title');
+          $termDocs = $this->repo->termDocs($term, $docsFilter);
+        }
+        
+        $docs = array();
+        foreach ($termDocs as $td) {
+          $docs[] = LuceneDocumentConverter::luceneToPilaster($this->repo->getDocument($td));
+        }
+        return $docs;
+        
+        throw new Exception(print_r($docs, TRUE));
         
         // This implementation roughly follows the Rhizome implementation
         // (see com.technosophos.rhizome.repository.lucene.LuceneSearcher)
@@ -590,7 +610,7 @@ class LuceneDocumentConverter {
     /**
      * Field name of the document ID.
      */
-    const docid_field_name = '__docid';
+    const docid_field_name = 'id';
     /**
      * Field name of the data storage item.
      */
@@ -619,30 +639,34 @@ class LuceneDocumentConverter {
           
           // Index arrays of values as Keywords.
           if(is_array($v)) {
+            $buff = '';
             foreach($v as $vv) {
               if (is_scalar($vv)) {
-                $ldoc->addField(Zend_Search_Lucene_Field::Keyword($m, $vv));
+                // Unlike real Lucene, Zend's implementation cannot store
+                // multiple fields with the same name. This is an implementation
+                // detail of Zend's version, which uses an array for storing field
+                // data.
+                //$ldoc->addField(Zend_Search_Lucene_Field::Text($k, $vv));
+                $buff .= $vv . ' ';
               }
-              /*
-              else {
-                throw new PilasterException('Data field is not a string.')
-              }
-              */
-            }  
+            }
+            // Text is analyzed. This is a hack to support multi-value.
+            $ldoc->addField(Zend_Search_Lucene_Field::unStored($k, $buff));
+            $alt = $k . '__keyword';
+            $ldoc->addField(new Zend_Search_Lucene_Field($alt, $buff, '', FALSE, TRUE, FALSE));
           }
           // Index single (scalar) values as Text fields.
           elseif (is_scalar($v)) {
-              $ldoc->addField(Zend_Search_Lucene_Field::Text($m, $v));
+              //$ldoc->addField(Zend_Search_Lucene_Field::keyword($k, $v));
+              //$ldoc->addField(Zend_Search_Lucene_Field::unStored($k, $v));
+              //$ldoc->addField(new Zend_Search_Lucene_Field($k, $v, '', FALSE, TRUE, FALSE));
+              $ldoc->addField(new Zend_Search_Lucene_Field($k, $v, '', FALSE, TRUE, FALSE));
           }
-        }
-        
-        if (isset($data[self::docid_field_name])) {
-          $ldoc->addField(Zend_Search_Lucene_Field::Keyword(self::docid_field_name, $data[self::docid_field_name]));
         }
         
         // The entire document is serialized and stored. We do this so that we can
         // reconstruct the exact document later.
-        $ldoc->addField(Zend_Search_Lucene_Field::UnIndexed(
+        $ldoc->addField(Zend_Search_Lucene_Field::keyword(
             self::pristine_field_name, 
             serialize($data)
         ));
