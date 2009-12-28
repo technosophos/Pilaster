@@ -55,6 +55,14 @@ class PilasterDBLuceneDriver implements PilasterDB {
     }
   }
   
+  public function has($docID) {
+    return $this->repo->hasDocument($docID);
+  }
+  
+  public function get($docID) {
+    return $this->repo->get($docID);
+  }
+  
   public function find($query = NULL, $fields = NULL) {
     if (is_string($query)) {
       // Process this as a search query:
