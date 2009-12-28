@@ -1,6 +1,8 @@
 <?php
 /**
  * Pilaster driver for Lucene backend.
+ * @package Pilaster
+ * @subpackage LuceneDriver
  */
 
 
@@ -58,6 +60,9 @@ class PilasterLuceneDriver {
         /*return*/ Zend_Search_Lucene::create($base_path . $repository_name);
     }
     
+    /**
+     * Check if the named repository exists.
+     */
     static function hasRepository($repository_name, $base_path = './') {
         
         if(!is_dir($base_path) || !is_writable($base_path)) return false;
@@ -150,13 +155,13 @@ class PilasterLuceneDriver {
      * @see $this->delete()
      */
     function replace($document) {
-        $ldoc = LuceneDocumentConverter::pilasterToLucene($document);
-        
-        $oldDoc = $this->get($document[self::doc_id]);
-        if(!empty($oldDoc)) $this->delete($document[self::doc_id]);
-        
-        $this->repo->addDocument($ldoc);
-        $this->repo->commit();
+      $ldoc = LuceneDocumentConverter::pilasterToLucene($document);
+      
+      $oldDoc = $this->get($document[self::doc_id]);
+      if(!empty($oldDoc)) $this->deleteByID($document[self::doc_id]);
+      
+      $this->repo->addDocument($ldoc);
+      $this->repo->commit();
     }
     
     /**
@@ -172,10 +177,7 @@ class PilasterLuceneDriver {
      */
     function deleteByID($documentID) {
         // Find document by document ID:
-        $term = new Zend_Search_Lucene_Index_Term(
-            $documentID,
-            self::doc_id
-        );
+        $term = $this->createTerm(self::doc_id, $documentID);
         
         $matches = $this->repo->termDocs($term);
         $c = 0;
@@ -192,7 +194,7 @@ class PilasterLuceneDriver {
         throw new Exception('No search specification found. Cowardly refusing to delete entire repository.');
       }
       
-      $results = $this->find($searchSpec);
+      $results = $this->narrowingSearch($searchSpec);
       throw new Exception("Not finished yet.");
     }
     
@@ -228,10 +230,7 @@ class PilasterLuceneDriver {
     function hasDocument($documentID) {
         
         // Find document by document ID:
-        $term = new Zend_Search_Lucene_Index_Term(
-            $documentID,
-            self::doc_id
-        );
+        $term = $this->createTerm(self::doc_id, $documentID);
         
         // Get the Lucene doc ID
         $matches = $this->repo->termDocs($term);
@@ -241,6 +240,11 @@ class PilasterLuceneDriver {
         return false;
     }
     
+    protected function createTerm($termID, $termValue) {
+      $termID = '___' . $termID;
+      return new Zend_Search_Lucene_Index_Term($termValue, $termID);
+    }
+    
     /**
      * Given a document ID, get a document.
      * @param string $documentID
@@ -248,17 +252,12 @@ class PilasterLuceneDriver {
      */
     function get($documentID) {
         
-        //print "DocumentDB::get: Trying to get " . $documentID;
         // Find document by document ID:
-        $term = new Zend_Search_Lucene_Index_Term(
-            $documentID,
-            self::doc_id
-        );
-        
-        //var_dump($term);
+        $term = $this->createTerm(self::doc_id, $documentID);
         
         // Get the Lucene doc ID
         $matches = $this->repo->termDocs($term);
+        
         //var_dump($matches);
         if(count($matches) == 0) {
             //print "DocumentDB::get: NO DOCUMENTS FOUND.";
@@ -271,8 +270,8 @@ class PilasterLuceneDriver {
             //print "DocumentDB::get: Requested document has been deleted.";
             return false;
         }
-        $doc = $this->repo->getDocument($lid);
         
+        $doc = $this->repo->getDocument($lid);
         // Convert Lucene doc to Pilaster doc and return.
         return LuceneDocumentConverter::luceneToPilaster($doc);
     }
@@ -454,7 +453,10 @@ class PilasterLuceneDriver {
         
         $docs = array();
         foreach ($termDocs as $td) {
-          $docs[] = LuceneDocumentConverter::luceneToPilaster($this->repo->getDocument($td));
+          // Deleted docs will still show in the index.
+          if (!$this->repo->isDeleted($td)) {
+            $docs[] = LuceneDocumentConverter::luceneToPilaster($this->repo->getDocument($td));
+          }
         }
         return $docs;
         
@@ -491,7 +493,9 @@ class PilasterLuceneDriver {
      * @return boolean 
      *  TRUE if the document contains matches for everything in $toMatch. FALSE
      *  otherwise.
+     * @deprecated No longer used.
      */
+     /*
     private function checkANDFieldMatches(Zend_Search_Lucene_Document $candidate, $toMatch) {
         $isMatch = TRUE;
         foreach($toMatch as $name => $value) {
@@ -509,6 +513,7 @@ class PilasterLuceneDriver {
         }
         return $isMatch;
     }
+    */
     
     /**
      * Retrieve a list of all Lucene Document IDs.

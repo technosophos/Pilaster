@@ -145,6 +145,10 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
     //throw new Exception(print_r($res, TRUE));
     $this->assertEquals(2, count($res), 'Query string against title field.');
     
+    $id = $res[0]['id'];
+    $ids = array('AnotherDoc', 'TEST_001');
+    $this->assertTrue(in_array($id, $ids), "$id is one of the known IDs.");
+    
   }
   
   public function testFindOne() {
@@ -163,7 +167,22 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
   }
   
   public function testSave() {
+    $db = Pilaster::selectDB(DB_NAME, DB_PATH);
+    $db->save($this->doc);
     
+    // Search by ID.
+    $q = array('id' => self::DOCID);
+    $res = $db->find($q);
+    $this->assertEquals(1, count($res), 'One search result found.');
+    
+    $this->doc['foo'] = 'bar';
+    $db->save($this->doc);
+    
+    // Search by ID.
+    $q = array('id' => self::DOCID);
+    $res = $db->find($q);
+    $this->assertEquals(1, count($res), 'One search result found after update.');
+    $this->assertEquals('bar', $res[0]['foo'], 'Added property found.');
   }
   
   public function testRemove() {
