@@ -44,6 +44,11 @@ class PilasterDBLuceneDriver implements PilasterDB {
   public function count($query = NULL) {
     if (!isset($query))
       return $this->db->countDocuments();
+    /*
+    elseif (count($query) == 1) {
+      // Optimize using Lucene::docFreq()
+    }
+    */
     else {
       $res = $this->find($query);
       return count($res);

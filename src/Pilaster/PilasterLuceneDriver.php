@@ -129,6 +129,10 @@ class PilasterLuceneDriver {
      */
     function insert($document) {
         $ldoc = LuceneDocumentConverter::pilasterToLucene($document);
+        /*
+        $this->repo->setMergeFactor(15, 100);
+        $this->repo->setMaxBufferedDocs(25);
+        */
         $this->repo->addDocument($ldoc);
         $this->repo->commit();
     }
@@ -443,8 +447,8 @@ class PilasterLuceneDriver {
         
         $docsFilter = new Zend_Search_Lucene_Index_DocsFilter();
         foreach ($narrower as $termId => $termValue) {
-          $term = new Zend_Search_Lucene_Index_Term($termValue, $termId);
-          //$term = new Zend_Search_Lucene_Search_QueryEntry_Term('Test', 'title');
+          // We use the ___ to separate term keywords from tokenized fields.
+          $term = new Zend_Search_Lucene_Index_Term($termValue, '___' . $termId);
           $termDocs = $this->repo->termDocs($term, $docsFilter);
         }
         
@@ -454,14 +458,12 @@ class PilasterLuceneDriver {
         }
         return $docs;
         
-        throw new Exception(print_r($docs, TRUE));
-        
         // This implementation roughly follows the Rhizome implementation
         // (see com.technosophos.rhizome.repository.lucene.LuceneSearcher)
         // But the Zend API is smaller than the Lucene API, so we have 
         // used "higher level" API calls, and skipped the lazy loading,
         // which Zend either does not support, or supports quietly.
-        
+        /*
         $docs = $this->getAllLuceneDocIDs();
         $matches = array();
         foreach($docs as $lid) {
@@ -473,6 +475,7 @@ class PilasterLuceneDriver {
         }
         
         return $matches;
+        */
     }
     
     /**
@@ -652,15 +655,16 @@ class LuceneDocumentConverter {
             }
             // Text is analyzed. This is a hack to support multi-value.
             $ldoc->addField(Zend_Search_Lucene_Field::unStored($k, $buff));
-            $alt = $k . '__keyword';
+            $alt = '___' . $k;
             $ldoc->addField(new Zend_Search_Lucene_Field($alt, $buff, '', FALSE, TRUE, FALSE));
           }
           // Index single (scalar) values as Text fields.
           elseif (is_scalar($v)) {
               //$ldoc->addField(Zend_Search_Lucene_Field::keyword($k, $v));
-              //$ldoc->addField(Zend_Search_Lucene_Field::unStored($k, $v));
+              $ldoc->addField(Zend_Search_Lucene_Field::unStored($k, $v));
               //$ldoc->addField(new Zend_Search_Lucene_Field($k, $v, '', FALSE, TRUE, FALSE));
-              $ldoc->addField(new Zend_Search_Lucene_Field($k, $v, '', FALSE, TRUE, FALSE));
+              $alt = '___' . $k;
+              $ldoc->addField(new Zend_Search_Lucene_Field($alt, $v, '', FALSE, TRUE, FALSE));
           }
         }
         

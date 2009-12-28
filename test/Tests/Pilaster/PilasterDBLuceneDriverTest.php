@@ -59,8 +59,16 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
     $q = array('title' => 'Test');
     $this->assertEquals(1, $db->count($q), 'One document with title "Test"');
     
-
+    /*
+    $doc = array('title' => 'The quick brown fox jumped over the lazy dog.');
+    for ($i = 0; $i < 1000; ++$i) {
+      $doc['id'] = $i;
+      $db->insert($doc);
+    }
     
+    $this->assertEquals(1002, $db->count(), 'Checking across a larger index.');
+    */
+    $db->close();
   }
   
   public function testFindWithArray() {
