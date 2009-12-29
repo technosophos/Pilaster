@@ -424,6 +424,44 @@ class PilasterLuceneDriver {
     }
     
     /**
+     * Get all of the (Lucene) document IDs that match a given narrower.
+     *
+     * Helper function for {@link narrowingSearch()}.
+     *
+     * @param array $narrower
+     *  See the description in {@link narrowingSearch()}.
+     * @return array
+     *  The Term Docs array -- an array of Lucene document IDs.
+     */
+    protected function narrowingSearchGetDocs($narrower) {
+      $docsFilter = new Zend_Search_Lucene_Index_DocsFilter();
+      foreach ($narrower as $termId => $termValue) {
+        // We use the ___ to separate term keywords from tokenized fields.
+        $term = new Zend_Search_Lucene_Index_Term($termValue, '___' . $termId);
+        $termDocs = $this->repo->termDocs($term, $docsFilter);
+      }
+      return $termDocs;
+    }
+    
+    /**
+     * Count the items that would be returned from a full narrowing search.
+     *
+     * Since this skips the retrieval of data, it is faster than a full
+     * {@link narrowingSearch()}.
+     *
+     * @param array $narrower
+     *  See the description in {@link narrowingSearch()}.
+     * @return int
+     *  Count of documents. An empty narrower will result in a return value of 0.
+     */
+    public function narrowingSearchCount($narrower) {
+      if(empty($narrower) || !is_array($narrower)) return 0;
+      
+      $termDocs = $this->narrowingSearchGetDocs($narrower);
+      return count($termDocs);
+    }
+    
+    /**
      * Get a list of documents that match the given filter.
      * The $narrower is an associative array of metadata=>value pairs that a 
      * document must match before being included in the result set. Think of
@@ -435,21 +473,13 @@ class PilasterLuceneDriver {
     function narrowingSearch($narrower) {
       // The point here is to make the search faster and more efficient than
       // the built-in find() method in Zend, which incurs the weight of the 
-      // scoring system and other subsystems. 
+      // scoring system and other subsystems. This lib does not need scoring and 
+      // weighting.
       // This can probably be more efficient.
-      //
-      // Might be able to optimize by following the termDocs/termFilter pattern
-      // used in Lucene/Search/Query/MultiTerm.php. See _calculateConjunctionResult().
-      
         
         if(empty($narrower) || !is_array($narrower)) return false; // short-circuit if narrower is empty.
         
-        $docsFilter = new Zend_Search_Lucene_Index_DocsFilter();
-        foreach ($narrower as $termId => $termValue) {
-          // We use the ___ to separate term keywords from tokenized fields.
-          $term = new Zend_Search_Lucene_Index_Term($termValue, '___' . $termId);
-          $termDocs = $this->repo->termDocs($term, $docsFilter);
-        }
+        $termDocs = $this->narrowingSearchGetDocs($narrower);
         
         $docs = array();
         foreach ($termDocs as $td) {
@@ -459,61 +489,7 @@ class PilasterLuceneDriver {
           }
         }
         return $docs;
-        
-        // This implementation roughly follows the Rhizome implementation
-        // (see com.technosophos.rhizome.repository.lucene.LuceneSearcher)
-        // But the Zend API is smaller than the Lucene API, so we have 
-        // used "higher level" API calls, and skipped the lazy loading,
-        // which Zend either does not support, or supports quietly.
-        /*
-        $docs = $this->getAllLuceneDocIDs();
-        $matches = array();
-        foreach($docs as $lid) {
-            $doc = $this->repo->getDocument($lid);
-            //echo "Got the document...";
-            if(empty($narrower) || $this->checkANDFieldMatches($doc, $narrower)) {
-                $matches[] = LuceneDocumentConverter::luceneToPilaster($doc);
-            }
-        }
-        
-        return $matches;
-        */
     }
-    
-    /**
-     * Evaluates a document to see whether it contains metadata that matches all
-     * of the entries in $toMatch.
-     * 
-     * Any mismatch results in a return of FALSE.
-     * @param Zend_Search_Lucene_Document $candidate 
-     *  The document to evaluate.
-     * @param array $toMatch 
-     *  An associative array of Name/Value (Field/Value) pairs. The document 
-     *  must match every pair before this will return TRUE.
-     * @return boolean 
-     *  TRUE if the document contains matches for everything in $toMatch. FALSE
-     *  otherwise.
-     * @deprecated No longer used.
-     */
-     /*
-    private function checkANDFieldMatches(Zend_Search_Lucene_Document $candidate, $toMatch) {
-        $isMatch = TRUE;
-        foreach($toMatch as $name => $value) {
-            try {
-                $field = $candidate->getField($name);
-                if(!isset($field) || $field->value != $value) {
-                    return FALSE; //$isMatch = FALSE;
-                }
-            } catch (Zend_Search_Lucene_Exception $e) {
-                // Term does not exist for document. For some reason this
-                // case throws an exception, even though it is not abnormal
-                // for a document to NOT have a specific term.
-                return FALSE; //$isMatch = FALSE;
-            }
-        }
-        return $isMatch;
-    }
-    */
     
     /**
      * Retrieve a list of all Lucene Document IDs.

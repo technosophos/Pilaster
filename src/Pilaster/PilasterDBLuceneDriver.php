@@ -36,10 +36,13 @@ class PilasterDBLuceneDriver implements PilasterDB {
    * Count the number of documents.
    *
    * Performance note: If no query is passed, this is optimized to count documents.
-   * Passing a query, however, is no more efficient than simply running {@link find()}
-   * and then counting the results.
+   * If passing an array, this is optimized to not load the retrieved object (just 
+   * count it), thus making this more efficient than a full search.
+   * 
+   * Passing a query string, however, is no more efficient than simply running 
+   * {@link find()} and then counting the results.
    *
-   * @see PilasterDB
+   * @see PilasterDB::count()
    */
   public function count($query = NULL) {
     if (!isset($query))
@@ -49,6 +52,9 @@ class PilasterDBLuceneDriver implements PilasterDB {
       // Optimize using Lucene::docFreq()
     }
     */
+    elseif (is_array($query)) {
+      return $this->db->narrowingSearchCount($query);
+    }
     else {
       $res = $this->find($query);
       return count($res);
@@ -56,11 +62,11 @@ class PilasterDBLuceneDriver implements PilasterDB {
   }
   
   public function has($docID) {
-    return $this->repo->hasDocument($docID);
+    return $this->db->hasDocument($docID);
   }
   
   public function get($docID) {
-    return $this->repo->get($docID);
+    return $this->db->get($docID);
   }
   
   public function find($query = NULL, $fields = NULL) {

@@ -37,6 +37,24 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
     $db->insert($this->doc);
   }
   
+  public function testHas() {
+    $db = Pilaster::selectDB(DB_NAME, DB_PATH);
+    
+    $db->insert($this->doc);
+    $this->assertTrue($db->has($this->doc['id']), 'DB has document.');
+    $this->assertFalse($db->has('binky'), 'DB has document.');
+  }
+  
+  public function testGet() {
+    $db = Pilaster::selectDB(DB_NAME, DB_PATH);
+    
+    $db->insert($this->doc);
+    
+    $doc = $db->get($this->doc['id']);
+    $this->assertTrue(is_array($doc), 'Document is array.');
+    $this->assertEquals($this->doc['title'], $doc['title']);
+  }
+  
   public function testCount() {
     
     $db = Pilaster::selectDB(DB_NAME, DB_PATH);
@@ -186,11 +204,26 @@ class PilasterDBLuceneDriverTest extends PHPUnit_Framework_TestCase {
   }
   
   public function testRemove() {
+    $db = Pilaster::selectDB(DB_NAME, DB_PATH);
+    $db->save($this->doc);
+    $db->insert(array('id' => 'AnotherDoc'));
+    $db->insert(array('id' => 'YetAnotherDoc'));
     
+    $this->assertEquals(3, $db->count(), 'There should be three documents');
+    
+    $db->remove(array('id' => 'AnotherDoc'));
+    $this->assertEquals(2, $db->count(), 'There should be two documents');
+    
+    $db->remove(array('id' => 'YetAnotherDoc'));
+    $this->assertEquals(1, $db->count(), 'There should be one documents');
+    
+    $db->remove(array('id' => $this->doc['id']));
+    $this->assertEquals(0, $db->count(), 'There should be zero documents');
   }
   
   public function testClose() {
-    
+    $db = Pilaster::selectDB(DB_NAME, DB_PATH);
+    $db->close();
   }
   
   public function tearDown() {
