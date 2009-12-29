@@ -172,30 +172,55 @@ class PilasterLuceneDriver {
      * chance that there are multiple documents with the same ID (a possibility
      * in Lucene), this will delete them all.
      * 
-     * @param String $documentID Document ID for document to delete.
-     * @return int Number of matching documents deleted. This should be either 1 or 0.
+     * @param String $documentID 
+     *  Document ID for document to delete.
+     * @return int 
+     *  Number of matching documents deleted. This should be either 1 or 0.
      */
     function deleteByID($documentID) {
         // Find document by document ID:
         $term = $this->createTerm(self::doc_id, $documentID);
         
         $matches = $this->repo->termDocs($term);
-        $c = 0;
-        foreach($matches as $match) {
-            $this->repo->delete($match);
-            ++$c;
-        }
-        $this->repo->commit();
+        $c = count($matches);
+        $this->deleteByLuceneIDs($matches);
         return $c;
     }
     
+    /**
+     * Common deletion logic.
+     * @param mixed $termDocs
+     *   An integer ID or an array of integer IDs. These should be LUCENE IDs, not
+     *   Pilaster IDs.
+     */
+    protected function deleteByLuceneIDs($termDocs) {
+      if (is_array($termDocs)) {
+        foreach($termDocs as $match) {
+          $this->repo->delete($match);
+        }
+      }
+      else {
+        $this->repo->delete($termDocs);
+      }
+      $this->repo->commit();
+    }
+    
+    /**
+     * Delete all items that match the given search.
+     *
+     * @param $searchSpec
+     *  A valid search spec (array or string) as explained in {@link narrowingSearch()}.
+     * @return int
+     *  The number of items deleted.
+     */
     function delete ($searchSpec) {
       if (empty($searchSpec)) {
         throw new Exception('No search specification found. Cowardly refusing to delete entire repository.');
       }
       
       $results = $this->narrowingSearch($searchSpec);
-      throw new Exception("Not finished yet.");
+      $this->deleteByLuceneIDs($results);
+      return count($results);
     }
     
     /**
@@ -248,7 +273,8 @@ class PilasterLuceneDriver {
     /**
      * Given a document ID, get a document.
      * @param string $documentID
-     * @return PilasterDocument The document, or false if the document could not be found.
+     * @return array
+     *  The document, or false if the document could not be found.
      */
     function get($documentID) {
         
@@ -337,6 +363,7 @@ class PilasterLuceneDriver {
      * @param string $name Metadata name.
      * @param string $value Metadata value.
      * @return array Array of {@link PilasterDocument} objects.
+     * @deprecated {@link narrowingSearch} is equally as fast, now, and more flexible.
      */
     function searchByMetadata($name, $value = '') {
         // Find document by document ID:
