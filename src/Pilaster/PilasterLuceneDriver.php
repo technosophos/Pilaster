@@ -218,7 +218,7 @@ class PilasterLuceneDriver {
         throw new Exception('No search specification found. Cowardly refusing to delete entire repository.');
       }
       
-      $results = $this->narrowingSearch($searchSpec);
+      $results = $this->narrowingSearchGetDocs($searchSpec);
       $this->deleteByLuceneIDs($results);
       return count($results);
     }
@@ -373,29 +373,17 @@ class PilasterLuceneDriver {
     }
     
     /**
-     * Get the value of just one single metadatum for one particular document.
-     * This will return empty if either the doc doesn't exist or the MD has no
-     * associated value.
-     * @param String $mdName Name of the metadatum to get.
-     * @param string $documentID Document ID to search
-     * @return String value of the given metadatum for the given document.
-     * @deprecated {@link narrowingSearch()} is now as fast as this function, so this has
-     *  been deprecated in favor of that.
-     */
-    function getMetadatumByDocumentID($mdName, $documentID) {
-      $termDocs = $this->narrowingSearchGetDocs(array(self::doc_id => $documentID));
-      if (count($termDocs) == 0) return '';
-      $doc = $this->repo->getDocument($termDocs[0]);
-      
-      // This returns the keyword field data, which may not be stored!
-      return $doc->getFieldValue($mdName);
-    }
-    
-    /**
      * Perform a search of the DocumentDB.
-     * <b>Warning:</b> This is likely to change!
+     *
+     * This funs a full text search using Lucene, and then returns only the 
+     * document(s). It is considerably slower than {@link narrowingSearch()}
+     * because it incurs the full overhead of Zend Search.
+     *
      * @param string $query
-     * @return array Array of Hit objects.
+     *   A valid query string. Any plain text search (along with all of Lucene's
+     *   supported operators) can be used here.
+     * @return array 
+     *   Array of found objects.
      */
     function search($query) {
         $hits = $this->repo->find($query);
@@ -404,9 +392,6 @@ class PilasterLuceneDriver {
         foreach ($hits as $hit) {
           $results[] = LuceneDocumentConverter::luceneToPilaster($hit->getDocument());
         }
-        
-        // What should this return? The docs state that it find() returns a 
-        // Zend_Search_Lucene_QueryHit object, but this class is undocumented.
         
         return $results;
     }
