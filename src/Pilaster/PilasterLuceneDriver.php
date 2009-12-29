@@ -356,35 +356,6 @@ class PilasterLuceneDriver {
         }
         return $a;
     }
-      
-    /**
-     * Search for metadata and return any document that matches.
-     * 
-     * @param string $name Metadata name.
-     * @param string $value Metadata value.
-     * @return array Array of {@link PilasterDocument} objects.
-     * @deprecated {@link narrowingSearch} is equally as fast, now, and more flexible.
-     */
-    function searchByMetadata($name, $value = '') {
-        // Find document by document ID:
-        $term = new Zend_Search_Lucene_Index_Term(
-            $value,
-            $name
-        );
-        
-        // Get the Lucene doc ID
-        $matches = $this->repo->termDocs($term);
-        
-        $docList = array();
-        if (count($matches) > 0) {
-            foreach ($matches as $match) {
-                $doc = $this->repo->getDocument($match);
-                $docList[] = LuceneDocumentConverter::luceneToPilaster($doc);
-            }
-        }
-        
-        return $docList;
-    }
     
     /**
      * Get all of the metadata names in this repository.
@@ -396,7 +367,6 @@ class PilasterLuceneDriver {
         foreach($a as $aa) {
             if(strpos($aa, '__') !== 0) 
               $b[] = $aa;
-            //else print "Driver::getMetadataNames: " . $aa;
         }
         unset($a);
         return $b;
@@ -409,25 +379,16 @@ class PilasterLuceneDriver {
      * @param String $mdName Name of the metadatum to get.
      * @param string $documentID Document ID to search
      * @return String value of the given metadatum for the given document.
+     * @deprecated {@link narrowingSearch()} is now as fast as this function, so this has
+     *  been deprecated in favor of that.
      */
     function getMetadatumByDocumentID($mdName, $documentID) {
-        // Find document by document ID:
-        $term = new Zend_Search_Lucene_Index_Term(
-            $documentID,
-            self::doc_id
-        );
-        
-        // Get the Lucene doc ID
-        $matches = $this->repo->termDocs($term);
-        if(count($matches) == 0) 
-          return '';
-        
-        // Fetch the document from Lucene
-        $lid = $matches[0];
-        $doc = $this->repo->getDocument($lid);
-        
-        // Get the MD value:
-        return $doc->getFieldValue($mdName);
+      $termDocs = $this->narrowingSearchGetDocs(array(self::doc_id => $documentID));
+      if (count($termDocs) == 0) return '';
+      $doc = $this->repo->getDocument($termDocs[0]);
+      
+      // This returns the keyword field data, which may not be stored!
+      return $doc->getFieldValue($mdName);
     }
     
     /**
