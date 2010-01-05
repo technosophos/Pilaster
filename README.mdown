@@ -1,6 +1,10 @@
 # A Simple Document Database #
 
-Pilaster is a simple document database written in pure PHP.
+Pilaster is a simple document database written in pure PHP. It provides similar (though simpler) functions to MongoDB or CouchDB. However, it is designed to run within a PHP application, not as a separate server.
+
+*Pilaster is unstable!* We have just begun development on this version, and it is not complete yet. Please provide input and feedback -- and CODE!
+
+Take a look at the unit tests for examples of use.
 
 ## History ##
 
